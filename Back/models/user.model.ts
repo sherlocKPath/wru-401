@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 // Interface สำหรับ User
 export interface IUser {
+  _id: string
   department: string;
   email: string;
   name: string;
