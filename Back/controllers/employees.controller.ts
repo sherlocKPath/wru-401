@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
-import User from "../models/user.model";
+import User, { IUser } from "../models/user.model";
 // import Emp from "../models/employees.model";
+
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: IUser; // หรือกำหนด type ที่คุณใช้สำหรับ user
+    }
+  }
+}
 
 // admin only
 export const getAllEmployees = async (req: Request, res: Response) => {
@@ -18,6 +27,43 @@ export const getAllEmployees = async (req: Request, res: Response) => {
       });
     } else {
       console.log("Error in getAllEmployees controller:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        details: "An unknown error occurred",
+      });
+    }
+  }
+};
+
+export const getEmployees = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: User not logged in" });
+    }
+
+    // ใช้ findById เพื่อค้นหาผู้ใช้จาก _id
+    const employee = await User.findById(user._id).select(
+      "-_id -password -lastLogin -lastLogout -role -createdAt -updatedAt -__v -pendingWorkLogs"
+    );
+
+    if (!employee) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(employee);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error in getEmployee controller:", error.message);
+      res.status(500).json({
+        error: "Internal server error",
+        details: error.message,
+      });
+    } else {
+      console.error("Error in getEmployee controller:", error);
       res.status(500).json({
         error: "Internal server error",
         details: "An unknown error occurred",
